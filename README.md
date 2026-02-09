@@ -23,7 +23,7 @@ DatAnalyzer provides flexible, customizable semi-autonomous data analysis: good 
 ## Installation
 
 ```bash
-git clone <your-repo-url> DatAnalyzer-Python
+git clone https://github.com/AnaHill/DatAnalyzer-Python.git
 cd DatAnalyzer-Python
 pip install -r requirements.txt
 ```
