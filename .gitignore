@@ -45,6 +45,9 @@ coverage.xml
 # Jupyter
 .ipynb_checkpoints/
 
-# Local data (optional)
+# Local data and generated outputs
 *.h5
 data/
+test_data/
+*.duckdb
+report.html

@@ -27,14 +27,39 @@ DatAnalyzer provides flexible, customizable semi-autonomous data analysis: good 
 ```bash
 git clone https://github.com/AnaHill/DatAnalyzer-Python.git
 cd DatAnalyzer-Python
+```
+
+**Windows — one-click setup** (creates `.venv`, installs all dependencies):
+
+```bat
+setup.bat
+```
+
+**Manual setup** (any platform):
+
+```bash
+python -m venv .venv
+
+# Windows (PowerShell) — if you get an "execution policy" error, run this once first:
+#   Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+.venv\Scripts\activate
+
+# Windows alternative — use the .bat directly (no policy change needed):
+.venv\Scripts\activate.bat
+
+# macOS / Linux
+source .venv/bin/activate
+
 pip install -r requirements.txt
 ```
 
-Optional, install as a package:
+Optional — install the `datanalyzer` package itself in editable mode (needed if you import it from outside the project root):
 
 ```bash
 pip install -e .
 ```
+
+The virtual environment directory `.venv/` is listed in `.gitignore` and will not be committed.
 
 ## Project layout
 
