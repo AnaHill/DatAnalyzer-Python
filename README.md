@@ -20,7 +20,7 @@ DatAnalyzer provides flexible, customizable semi-autonomous data analysis: good 
 ## Requirements
 
 - Python 3.8+
-- numpy, scipy, h5py, pandas, matplotlib, duckdb
+- numpy, scipy, h5py, pandas, matplotlib, duckdb, streamlit
 
 ## Installation
 
@@ -43,6 +43,7 @@ DatAnalyzer-Python/
 ├── README.md
 ├── requirements.txt
 ├── pyproject.toml
+├── app.py                    # Streamlit web UI
 ├── run_mea_analysis.py       # CLI: load → find peaks → BPM summary → export
 ├── mea_layouts/
 │   └── MEA_64_electrode_layout.txt
@@ -57,6 +58,19 @@ DatAnalyzer-Python/
 ```
 
 ## Usage
+
+### Web UI (Streamlit)
+
+```bash
+pip install streamlit   # one-time
+streamlit run app.py
+```
+
+Opens in your browser at `http://localhost:8501`.
+
+- Set the folder path and parameters in the sidebar, click **Run Analysis**
+- Results appear as interactive charts and a summary table
+- Download the HTML report or DuckDB file with one click
 
 ### Command line
 
