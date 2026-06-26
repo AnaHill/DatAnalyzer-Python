@@ -14,11 +14,13 @@ DatAnalyzer provides flexible, customizable semi-autonomous data analysis: good 
 - **Peak finding**: semi-autonomous peak detection (low/high) with configurable rules (MinPeakValue, MaxBPM, MinPeakDistance)
 - **BPM update**: peak-to-peak distances (ms), BPM per file/electrode, low vs high peak choice per channel
 - **BPM summary**: Amount_of_peaks, BPM_avg, Amplitude_avg, normalizing, peak_distances
+- **DuckDB export**: persist results to a local DuckDB file for OLAP querying
+- **HTML report**: generate a self-contained HTML report with charts and summary table (no internet required)
 
 ## Requirements
 
 - Python 3.8+
-- numpy, scipy, h5py, pandas, matplotlib
+- numpy, scipy, h5py, pandas, matplotlib, duckdb
 
 ## Installation
 
@@ -41,15 +43,17 @@ DatAnalyzer-Python/
 ├── README.md
 ├── requirements.txt
 ├── pyproject.toml
-├── run_mea_analysis.py       # Example: load → find peaks → BPM summary
+├── run_mea_analysis.py       # CLI: load → find peaks → BPM summary → export
 ├── mea_layouts/
 │   └── MEA_64_electrode_layout.txt
 └── datanalyzer/
     ├── __init__.py
     ├── models.py
-    ├── part1_raw_data_handling/   # HDF5 load, MEA layout
-    ├── part2_peak_handling/       # find_peaks_in_loop, rules
-    └── part3_data_handling_and_analyses/  # update_Data_BPM, create_BPM_summary
+    ├── part1_raw_data_handling/          # HDF5 load, MEA layout
+    ├── part2_peak_handling/              # find_peaks_in_loop, rules
+    ├── part3_data_handling_and_analyses/ # update_Data_BPM, create_BPM_summary
+    ├── part4_export/                     # export_to_duckdb
+    └── part5_report/                     # generate_html_report
 ```
 
 ## Usage
@@ -57,7 +61,13 @@ DatAnalyzer-Python/
 ### Command line
 
 ```bash
+# Basic analysis
 python run_mea_analysis.py /path/to/h5/folder --electrodes 21 28 31 51 --max-bpm 40 --min-peak-value 5e-5
+
+# Save results to DuckDB and generate an HTML report
+python run_mea_analysis.py /path/to/h5/folder --electrodes 21 28 31 51 \
+    --output-db results.duckdb \
+    --report report.html
 ```
 
 ### From Python
@@ -79,6 +89,67 @@ Data_BPM = find_peaks_in_loop(Data, DataInfo, Rule_in=Rule, data_multiply=-1)
 Data_BPM = update_Data_BPM(DataInfo, Data_BPM, using_high_peaks=-1)
 Data_BPM_summary = create_BPM_summary(DataInfo, Data_BPM)
 ```
+
+### DuckDB export
+
+```python
+from datanalyzer.part4_export import export_to_duckdb
+
+con = export_to_duckdb(DataInfo, Data_BPM_summary, db_path="results.duckdb")
+
+# Example query: average BPM per electrode across all files
+df = con.execute("""
+    SELECT electrode_number, AVG(bpm_avg) AS mean_bpm, AVG(amplitude_avg)*1e6 AS mean_amp_uv
+    FROM bpm_summary
+    GROUP BY electrode_number
+    ORDER BY electrode_number
+""").df()
+print(df)
+
+con.close()
+```
+
+Tables written to DuckDB:
+
+| Table | Contents |
+|---|---|
+| `experiments` | Experiment name, measurement name, date, framerate |
+| `files` | File index, filename, recording start time |
+| `bpm_summary` | BPM avg/std, amplitude avg/std, peak count, normalised values — one row per file × electrode |
+| `peak_distances` | Individual inter-peak intervals (ms) — one row per peak interval |
+
+### HTML report
+
+```python
+from datanalyzer.part5_report import generate_html_report
+
+generate_html_report(DataInfo, Data_BPM_summary, output_path="report.html")
+```
+
+Produces a single self-contained `.html` file with inline SVG charts (BPM over files, amplitude over files, normalised values) and a summary table. No internet connection required — open directly in any browser.
+
+## Testing with synthetic data
+
+No real `.h5` files? Generate synthetic test data with the included script (requires only `numpy` and `h5py`):
+
+```bash
+# Generate 5 files in test_data/ with ~30 BPM signals on electrodes 71 and 84
+python create_test_data.py
+
+# Then run the full analysis pipeline
+python run_mea_analysis.py test_data --electrodes 71 84 --max-bpm 40 \
+    --report report.html --output-db results.duckdb
+```
+
+Options:
+
+| Flag | Default | Description |
+|---|---|---|
+| `folder` | `test_data/` | Output folder |
+| `--n N` | `5` | Number of `.h5` files to generate |
+| `--bpm BPM` | `30` | Centre BPM; files ramp ±20 % around this value |
+
+Each file contains 60-electrode recordings at 25 kHz for 10 s.  Electrodes 71 and 84 get injected negative spikes; all others are Gaussian noise.
 
 ## Citations
 

@@ -1,6 +1,10 @@
 #!/usr/bin/env python3
 """
-Example script: load MEA .h5 data, find peaks, update BPM, create BPM summary.
+DatAnalyzer: load MEA .h5 data, find peaks, compute BPM summary.
+
+Optional outputs:
+  --output-db PATH   Save results to a DuckDB file (duckdb required).
+  --report    PATH   Generate a self-contained HTML report (matplotlib required).
 """
 
 import argparse
@@ -16,9 +20,14 @@ def main():
     p.add_argument("--exp-name", default="MEA2020_03_02", help="Experiment name")
     p.add_argument("--meas-name", default="MEA21002b", help="Measurement name")
     p.add_argument("--meas-date", default="2020_03_02", help="Measurement date")
-    p.add_argument("--electrodes", type=int, nargs="+", default=None, help="MEA electrode numbers (e.g. 21 28 31 51)")
+    p.add_argument("--electrodes", type=int, nargs="+", default=None,
+                   help="MEA electrode numbers (e.g. 21 28 31 51)")
     p.add_argument("--max-bpm", type=float, default=40, help="Max BPM for peak finding")
     p.add_argument("--min-peak-value", type=float, default=5e-5, help="Min peak amplitude (V)")
+    p.add_argument("--output-db", metavar="PATH", default=None,
+                   help="Write results to a DuckDB database file (e.g. results.duckdb)")
+    p.add_argument("--report", metavar="PATH", default=None,
+                   help="Write a self-contained HTML report (e.g. report.html)")
     args = p.parse_args()
 
     if args.folder:
@@ -68,6 +77,16 @@ def main():
     print("  Data: %d files" % len(Data))
     print("  Data_BPM_summary.BPM_avg shape:", Data_BPM_summary["BPM_avg"].shape)
     print("  Data_BPM_summary.Amplitude_avg shape:", Data_BPM_summary["Amplitude_avg"].shape)
+
+    if args.output_db:
+        from datanalyzer.part4_export import export_to_duckdb
+        con = export_to_duckdb(DataInfo, Data_BPM_summary, db_path=args.output_db)
+        con.close()
+        print(f"  DuckDB results saved to: {args.output_db}")
+
+    if args.report:
+        from datanalyzer.part5_report import generate_html_report
+        generate_html_report(DataInfo, Data_BPM_summary, output_path=args.report)
 
 
 if __name__ == "__main__":
